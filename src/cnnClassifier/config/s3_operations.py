@@ -232,7 +232,7 @@ class S3Operation:
         except Exception as e:
             raise CNNException(e, sys) from e
 
-    def read_data_from_s3(self, filename: str, bucket_name: str, output_filename: str):
+    def read_data_from_s3(self, filename: str, bucket_name: str, output_filename: str, root_dir: str):
         """_summary_
 
         Args:
@@ -247,8 +247,12 @@ class S3Operation:
             _type_: _description_
         """
         try:
+            logger.info("Initializing read from s3 bucket")
             bucket = self.get_bucket(bucket_name)
-
+            
+            logger.info(f"S3 bucket name:{bucket_name}")
+            logger.info(f"Filename: {filename}, output filename: {output_filename}")
+            os.chdir(root_dir)
             obj = bucket.download_file(Key=filename, Filename=output_filename)
 
             return output_filename

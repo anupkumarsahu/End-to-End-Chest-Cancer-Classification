@@ -38,16 +38,21 @@ def read_yaml(path_to_yaml: Path) -> ConfigBox:
 
 
 @ensure_annotations
-def create_directories(path_to_directories: list, verbose: object = True) -> object:
+def create_directories(path_to_directories: list, verbose=True):
     """create list of directories
 
     :param path_to_directories: list of path of directories
     :param verbose:
     """
+    logger.info("Entering create_directories method.")
+    logger.info(f"Value of directory list: {path_to_directories}")
     for path in path_to_directories:
+        logger.info(f"Current folder: {os.path.abspath(path)}")
+        
         os.makedirs(path, exist_ok=True)
         if verbose:
             logger.info(f"created directory at: {path}")
+    logger.info("Existed create_directories method.")
 
 
 @ensure_annotations

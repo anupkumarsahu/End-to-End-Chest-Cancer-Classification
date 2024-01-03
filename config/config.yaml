@@ -2,12 +2,15 @@ artifacts_root: artifacts
 
 
 data_ingestion:
+  bucket_name: "helmet-object-detection-20112023"
+  zip_file_name: "Chest-CT-Scan-data.zip"
   root_dir: artifacts/data_ingestion
-  source_URL: https://drive.google.com/file/d/1z0mreUtRmR-P-magILsDR3T7M6IkGXtY/view?usp=sharing
-  local_data_file: artifacts/data_ingestion/data.zip
-  unzip_dir: artifacts/data_ingestion
-
-
+  # local_data_file: "artifacts/data_ingestion/Chest-CT-Scan-data-new.zip"
+  local_data_file: Chest-CT-Scan-data.zip
+  # unzip_dir: artifacts\data_ingestion
+  unzip_dir: ""
+  adenocarcinoma_dir: artifacts/data_ingestion/Chest-CT-Scan-data/adenocarcinoma
+  normal_dir: artifacts/data_ingestion/Chest-CT-Scan-data/normal
 
 prepare_base_model:
   root_dir: artifacts/prepare_base_model
@@ -17,4 +20,9 @@ prepare_base_model:
 training:
   root_dir: artifacts/training
   trained_model_path: artifacts/training/model.h5
+
+aws_access_key:
+  aws_access_key_id_env_key: "AWS_ACCESS_KEY_ID"
+  aws_secret_access_key_env_key: "AWS_SECRET_ACCESS_KEY"
+  region_name: "us-east-1"
 

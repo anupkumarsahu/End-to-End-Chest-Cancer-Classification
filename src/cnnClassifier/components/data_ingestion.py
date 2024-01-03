@@ -1,22 +1,32 @@
 import os
+import shutil
 import sys
 from zipfile import ZipFile
-from cnnClassifier.entity.artifacts_entity import DataIngestionArtifacts
 
-from cnnClassifier.entity.config_entity import DataIngestionConfig
-from cnnClassifier.config.s3_operations import S3Operation
+from cnnClassifier.config import s3_operations
+from cnnClassifier.constants import CONFIG_FILE_PATH, PARAMS_FILE_PATH
+from cnnClassifier.entity.artifacts_entity import DataIngestionArtifacts
 from cnnClassifier.exception import CNNException
 from cnnClassifier.logger import logger
+from cnnClassifier.utils.common import create_directories, read_yaml
+from cnnClassifier.config.s3_operations import S3Operation
 
 
 class DataIngestion:
     """docstring for DataIngestion."""
 
     def __init__(
-        self, data_ingestion_config: DataIngestionConfig, s3_operations: S3Operation
+        self,
+        s3_operations: S3Operation,
+        config_filepath=CONFIG_FILE_PATH,
+        params_filepath=PARAMS_FILE_PATH,
     ):
-        self.data_ingestion_config = data_ingestion_config
-        self.s3_operations = s3_operations
+        self.s3_operation = s3_operations
+
+        self.config = read_yaml(config_filepath)
+        self.params = read_yaml(params_filepath)
+
+        # create_directories(self.config.artifacts_root)
 
     def get_data_from_s3(self):
         """_summary_
@@ -26,15 +36,30 @@ class DataIngestion:
         """
         try:
             logger.info("Entered the get_data_from_s3 method of Data ingestion class")
-            os.makedirs(
-                self.data_ingestion_config.DATA_INGESTION_ARTIFACTS_DIR, exist_ok=True
-            )
 
-            self.s3_operations.read_data_from_s3(
-                self.data_ingestion_config.ZIP_FILE_NAME,
-                self.data_ingestion_config.BUCKET_NAME,
-                self.data_ingestion_config.ZIP_FILE_PATH,
+            logger.info(f"Chest CT-Scan folder {self.config.data_ingestion.root_dir}")
+
+            logger.info(
+                f"Is root dir? {os.path.isdir(self.config.data_ingestion.root_dir)}, current directory: {os.path.abspath(self.config.data_ingestion.root_dir)}"
             )
+            
+            if os.path.isdir(self.config.data_ingestion.root_dir):
+                logger.info(f"Inside if condition of isdir")
+                shutil.rmtree(self.config.data_ingestion.root_dir)
+
+            os.makedirs(self.config.data_ingestion.root_dir, exist_ok=True)
+
+            logger.info(
+                f"Zip file path {self.config.data_ingestion.local_data_file}, and file name {self.config.data_ingestion.zip_file_name}"
+            )
+            if not os.path.isfile(self.config.data_ingestion.local_data_file):
+                self.s3_operation.read_data_from_s3(
+                    self.config.data_ingestion.zip_file_name,
+                    self.config.data_ingestion.bucket_name,
+                    self.config.data_ingestion.local_data_file,
+                    self.config.data_ingestion.root_dir,
+                )
+
 
             logger.info("Exited the get_data_from_s3 method of Data ingestion class")
         except Exception as e:
@@ -52,17 +77,21 @@ class DataIngestion:
         logger.info("Entered the unzip_and_clean method of Data ingestion class")
 
         try:
-            with ZipFile(self.data_ingestion_config.ZIP_FILE_PATH, "r") as zip_ref:
-                zip_ref.extractall(self.data_ingestion_config.ZIP_FILE_DIR)
-            
+            with ZipFile(self.config.data_ingestion.local_data_file, "r") as zip_ref:
+                zip_ref.extractall(self.config.data_ingestion.unzip_dir)
+
             logger.info("Exited the unzip_and_clean method of Data ingestion class")
 
             return (
-                self.data_ingestion_config.ADENOCARCINOMA_DATA_ARTIFACTS_DIR,
-                self.data_ingestion_config.NORMAL_DATA_ARTIFACTS_DIR,
+                self.config.data_ingestion.adenocarcinoma_dir,
+                self.config.data_ingestion.normal_dir,
             )
         except Exception as e:
             raise CNNException(e, sys) from e
+        
+    def prepare_data_ingestion_config(self):
+        config = self.config.data_ingestion
+        create_directories([config.root_dir])
 
     def initiate_data_ingestion(self) -> DataIngestionArtifacts:
         """_summary_
@@ -72,30 +101,26 @@ class DataIngestion:
 
         Returns:
             DataIngestionArtifacts: _description_
-        """        
+        """
         logger.info(
             "Entered the initiate_data_ingestion method of Data ingestion class"
         )
 
         try:
+            self.prepare_data_ingestion_config()
+            
             self.get_data_from_s3()
 
             logger.info("Fetched the data from S3 bucket")
 
             adenocarcinoma_file_path, normal_file_path = self.unzip_and_clean()
-            logger.info("Unzipped file and splited into adenocarcinoma and normal")
-
-            data_ingestion_artifact = DataIngestionArtifacts(
-                adenocarcinoma_file_path=adenocarcinoma_file_path,
-                normal_file_path=normal_file_path,
+            logger.info(
+                f"Unzipped file and splited into adenocarcinoma: {adenocarcinoma_file_path} and normal: {normal_file_path}"
             )
 
             logger.info(
                 "Exited the initiate_data_ingestion method of Data ingestion class"
             )
-            logger.info(f"Data ingestion artifact: {data_ingestion_artifact}")
-
-            return data_ingestion_artifact
 
         except Exception as e:
             raise CNNException(e, sys) from e
