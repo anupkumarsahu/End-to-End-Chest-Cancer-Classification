@@ -38,19 +38,14 @@ class DataIngestion:
             logger.info("Entered the get_data_from_s3 method of Data ingestion class")
 
             logger.info(f"Chest CT-Scan folder {self.config.data_ingestion.root_dir}")
-
-            logger.info(
-                f"Is root dir? {os.path.isdir(self.config.data_ingestion.root_dir)}, current directory: {os.path.abspath(self.config.data_ingestion.root_dir)}"
-            )
             
-            if os.path.isdir(self.config.data_ingestion.root_dir):
-                logger.info(f"Inside if condition of isdir")
-                shutil.rmtree(self.config.data_ingestion.root_dir)
+            if os.path.isdir(self.config.data_ingestion.unzip_dir):
+                shutil.rmtree(self.config.data_ingestion.unzip_dir)
 
             os.makedirs(self.config.data_ingestion.root_dir, exist_ok=True)
 
             logger.info(
-                f"Zip file path {self.config.data_ingestion.local_data_file}, and file name {self.config.data_ingestion.zip_file_name}"
+                f"Zip file name: {self.config.data_ingestion.local_data_file}, is the file available: {os.path.isfile(self.config.data_ingestion.local_data_file)}"
             )
             if not os.path.isfile(self.config.data_ingestion.local_data_file):
                 self.s3_operation.read_data_from_s3(
@@ -78,7 +73,8 @@ class DataIngestion:
 
         try:
             with ZipFile(self.config.data_ingestion.local_data_file, "r") as zip_ref:
-                zip_ref.extractall(self.config.data_ingestion.unzip_dir)
+                # zip_ref.extractall(self.config.data_ingestion.unzip_dir)
+                zip_ref.extractall()
 
             logger.info("Exited the unzip_and_clean method of Data ingestion class")
 

@@ -8,7 +8,7 @@ data_ingestion:
   # local_data_file: "artifacts/data_ingestion/Chest-CT-Scan-data-new.zip"
   local_data_file: Chest-CT-Scan-data.zip
   # unzip_dir: artifacts\data_ingestion
-  unzip_dir: ""
+  unzip_dir: artifacts/data_ingestion
   adenocarcinoma_dir: artifacts/data_ingestion/Chest-CT-Scan-data/adenocarcinoma
   normal_dir: artifacts/data_ingestion/Chest-CT-Scan-data/normal
 
