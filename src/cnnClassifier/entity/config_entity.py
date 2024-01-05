@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import sys
 from from_root import from_root
-from cnnClassifier.entity.artifacts_entity import PrepareBaseModelArtifacts, TrainingConfigArtifacts
+from cnnClassifier.entity.artifacts_entity import EvaluationArtifacts, PrepareBaseModelArtifacts, TrainingConfigArtifacts
 from cnnClassifier.exception import CNNException
 
 from src.cnnClassifier.config.s3_operations import S3Operation
@@ -89,3 +89,19 @@ class TrainingConfig:
 
         logger.info("Exit get_training_config method of TrainingConfig class.")
         return training_config
+    
+class EvaluationConfig:
+    def __init__(self, config_filepath=CONFIG_FILE_PATH, params_filepath=PARAMS_FILE_PATH):
+        self.config = read_yaml(config_filepath)
+        self.params = read_yaml(params_filepath)
+    
+    def get_evaluation_config(self) -> EvaluationArtifacts:
+        eval_config = EvaluationConfig(
+            path_of_model="artifacts/training/model.h5",
+            training_data="artifacts/data_ingestion/Chest-CT-Scan-data",
+            mlflow_uri="https://dagshub.com/entbappy/chest-Disease-Classification-MLflow-DVC.mlflow",
+            all_params=self.params,
+            params_image_size=self.params.IMAGE_SIZE,
+            params_batch_size=self.params.BATCH_SIZE
+        )
+        return eval_config

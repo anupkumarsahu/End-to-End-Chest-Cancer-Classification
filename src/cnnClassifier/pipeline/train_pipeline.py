@@ -2,11 +2,12 @@
 import os
 import sys
 from cnnClassifier.components.data_ingestion import DataIngestion
+from cnnClassifier.components.model_evaluation_mlflow import Evaluation
 from cnnClassifier.components.model_trainer import Training
 from cnnClassifier.components.prepare_base_model import PrepareBaseModel
 from cnnClassifier.config.s3_operations import S3Operation
-from cnnClassifier.entity.artifacts_entity import DataIngestionArtifacts, PrepareBaseModelArtifacts, TrainingConfigArtifacts
-from cnnClassifier.entity.config_entity import DataIngestionConfig, PrepareBaseModelConfig, TrainingConfig
+from cnnClassifier.entity.artifacts_entity import DataIngestionArtifacts, EvaluationArtifacts, PrepareBaseModelArtifacts, TrainingConfigArtifacts
+from cnnClassifier.entity.config_entity import DataIngestionConfig, EvaluationConfig, PrepareBaseModelConfig, TrainingConfig
 from cnnClassifier.exception import CNNException
 from cnnClassifier.logger import logger
 from cnnClassifier.utils.common import create_directories
@@ -19,6 +20,7 @@ class TrainPipeline:
         self.data_ingestion_config = DataIngestion(self.s3_operations)
         self.base_model_config = PrepareBaseModelConfig()
         self.train_model_config = TrainingConfig()
+        self.evaluate_model_config = EvaluationConfig()
         self.s3_operations = S3Operation()
         
     def start_data_ingestion(self) -> DataIngestionArtifacts:
@@ -78,8 +80,20 @@ class TrainPipeline:
             
             logger.info("Exit train_model method of TrainPipeline class.")
         except Exception as e:
-            raise e
+            raise CNNException(e, sys) from e
         
+    def evaluate_model(self) -> EvaluationArtifacts:
+        logger.info("Entered evaluate_model method of TrainPipeline class.")
+        try:
+            evaluate_model_artifacts = self.evaluate_model_config.get_evaluation_config()
+            
+            evaluate = Evaluation(evaluate_model_artifacts)
+            evaluate.evaluation()
+            evaluate.save_score()
+            
+            logger.info("Exit evaluate_model method of TrainPipeline class.")
+        except Exception as e:
+            raise CNNException(e, sys) from e
     
     def run_pipeline(self) -> None:
         """_summary_
@@ -89,10 +103,27 @@ class TrainPipeline:
         """        
         logger.info("Enter the run_pipeline method of TrainPipeline class")
         try:
+            logger.info(f"*******************")
+            logger.info(f">>>>>> stage data ingestion started <<<<<<")
             data_ingestion_artifact = self.start_data_ingestion()
+            logger.info(f">>>>>> stage data ingestion completed <<<<<<\n\nx==========x")
+            
+            logger.info(f"*******************")
+            logger.info(f">>>>>> stage model preparation started <<<<<<")
             prepare_base_model_artifact = self.prepare_base_model_config()
+            logger.info(f">>>>>> stage model preparation completed <<<<<<\n\nx==========x")
+            
+            logger.info(f"*******************")
+            logger.info(f">>>>>> stage train model started <<<<<<")
             train_model = self.train_model()
+            logger.info(f">>>>>> stage train model completed <<<<<<\n\nx==========x")
+            
+            logger.info(f"*******************")
+            logger.info(f">>>>>> stage evaluate model started <<<<<<")
+            evaluate_model = self.evaluate_model()
+            logger.info(f">>>>>> stage evaluate model completed <<<<<<\n\nx==========x")
 
             logger.info("Exited the run_pipeline method of TrainPipeline class")
+            
         except Exception as e:
             raise CNNException(e, sys) from e
